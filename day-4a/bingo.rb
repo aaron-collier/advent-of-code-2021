@@ -19,48 +19,38 @@ class Bingo
   end
 
   def mark_number(number)
-    @boards.each_with_index do |board, board_index|
-      board.each_with_index do |row, row_index|
-        row.each_with_index do |column, column_index|
-          next unless column == number
+    @boards.each do |board|
+      next unless board.collect.any? { |row| row.include?(number) }
 
-          @boards[board_index][row_index][column_index] = '*'
-          next unless winning_board?(board, row_index, column_index)
-
-          total = 0
-          board.each do |data_row|
-            total += data_row.map(&:to_i).sum
-          end
-          puts("Winning Score: #{total * number.to_i}")
-          return total
-        end
+      board.map! do |row|
+        row.map! { |val| val == number ? '*' : val }
       end
+
+      next unless winning_board?(board)
+
+      puts "Winning score: #{score(board, number)}"
+      return true
     end
+    false
   end
 
-  def winning_board?(board, row, column)
-    return true if board[row].join == '*****'
-    return true if board.transpose[column].join == '*****'
+  def winning_board?(board)
+    return true if board.map(&:join).include?('*****')
+    return true if board.transpose.map(&:join).include?('*****')
 
     false
+  end
+
+  def score(board, number)
+    board.flatten.map(&:to_i).sum * number.to_i
   end
 end
 
 bingo = Bingo.new('boards.txt')
 bingo.load_boards
-i = 0
+
 File.foreach(File.expand_path('input.txt', __dir__), chomp: true) do |line|
   line.split(',').each do |number|
-    puts "Number drawn: #{number}"
-    bingo.mark_number(number)
-    i += 1
-    continue if bingo.winning_score.positive?
+    break if bingo.mark_number(number)
   end
-  puts "Score: #{bingo.winning_score}"
-  next
 end
-p(i)
-
-# bingo.boards.each do |board|
-#   p(board)
-# end
